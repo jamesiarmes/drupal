@@ -2265,10 +2265,9 @@ function system_check_directory($form_element) {
  */
 function system_get_files_database(&$files, $type) {
   // Extract current files from database.
-  $result = db_query("SELECT filename, name, type, status, schema_version, weight FROM {system} WHERE type = :type", array(':type' => $type));
+  $result = db_query("SELECT uri, name, type, status, schema_version, weight FROM {system} WHERE type = :type", array(':type' => $type));
   foreach ($result as $file) {
     if (isset($files[$file->name]) && is_object($files[$file->name])) {
-      $file->uri = $file->filename;
       foreach ($file as $key => $value) {
         if (!isset($files[$file->name]->$key)) {
           $files[$file->name]->$key = $value;
@@ -2294,7 +2293,7 @@ function system_update_files_database(&$files, $type) {
   foreach ($result as $file) {
     if (isset($files[$file->name]) && is_object($files[$file->name])) {
       // Keep the old filename from the database in case the file has moved.
-      $old_filename = $file->filename;
+      $old_uri = $file->uri;
 
       $updated_fields = array();
 
@@ -2316,7 +2315,7 @@ function system_update_files_database(&$files, $type) {
       if (count($updated_fields)) {
         db_update('system')
           ->fields($updated_fields)
-          ->condition('filename', $old_filename)
+          ->condition('uri', $old_uri)
           ->execute();
       }
 
@@ -2325,7 +2324,7 @@ function system_update_files_database(&$files, $type) {
     }
     else {
       // File is not found in file system, so delete record from the system table.
-      $delete->condition('filename', $file->filename);
+      $delete->condition('uri', $file->uri);
     }
   }
 
@@ -2339,14 +2338,14 @@ function system_update_files_database(&$files, $type) {
   }
 
   // All remaining files are not in the system table, so we need to add them.
-  $query = db_insert('system')->fields(array('filename', 'name', 'type', 'owner', 'info'));
+  $query = db_insert('system')->fields(array('uri', 'name', 'type', 'owner', 'info'));
   foreach ($files as &$file) {
     if (isset($file->exists)) {
       unset($file->exists);
     }
     else {
       $query->values(array(
-        'filename' => $file->uri,
+        'uri' => $file->uri,
         'name' => $file->name,
         'type' => $type,
         'owner' => isset($file->owner) ? $file->owner : '',
@@ -2412,13 +2411,13 @@ function system_get_info($type, $name = NULL) {
  */
 function _system_rebuild_module_data() {
   // Find modules
-  $modules = drupal_system_listing('/^' . DRUPAL_PHP_FUNCTION_PATTERN . '\.module$/', 'modules', 'name', 0);
+  $modules = drupal_system_listing('/^' . DRUPAL_PHP_FUNCTION_PATTERN . '\.info$/', 'modules', 'name', 0);
 
   // Include the install profile in modules that are loaded.
   $profile = drupal_get_profile();
   $modules[$profile] = new stdClass();
   $modules[$profile]->name = $profile;
-  $modules[$profile]->uri = 'profiles/' . $profile . '/' . $profile . '.profile';
+  $modules[$profile]->uri = 'profiles/' . $profile . '/' . $profile . '.info';
 
   // Install profile hooks are always executed last.
   $modules[$profile]->weight = 1000;
@@ -2436,18 +2435,24 @@ function _system_rebuild_module_data() {
 
   // Read info files for each module.
   foreach ($modules as $key => $module) {
-    // The module system uses the key 'filename' instead of 'uri' so copy the
-    // value so it will be used by the modules system.
-    $modules[$key]->filename = $module->uri;
+    // Remove themes inside modules.
+    if (strpos($module->uri, 'themes') > strpos($module->uri, 'modules')) {
+      unset($modules[$key]);
+      continue;
+    }
 
     // Look for the info file.
-    $module->info = drupal_parse_info_file(dirname($module->uri) . '/' . $module->name . '.info');
+    $module->info = drupal_parse_info_file($module->uri);
 
     // Skip modules that don't provide info.
     if (empty($module->info)) {
       unset($modules[$key]);
       continue;
     }
+
+    // The URI found is an .info file, the directory is the
+    // module container that we store in the system table.
+    $modules[$key]->uri = dirname($module->uri);
 
     // Merge in defaults and save.
     $modules[$key]->info = $module->info + $defaults;
@@ -2550,7 +2555,6 @@ function _system_rebuild_theme_data() {
       // @see file_scan_directory()
       $themes[$name] = (object) array(
         'uri' => $uri,
-        'filename' => pathinfo($uri, PATHINFO_FILENAME),
         'name' => $name,
       );
     }
@@ -2584,41 +2588,43 @@ function _system_rebuild_theme_data() {
   $sub_themes = array();
   // Read info files for each theme
   foreach ($themes as $key => $theme) {
-    $themes[$key]->filename = $theme->uri;
-    $themes[$key]->info = drupal_parse_info_file($theme->uri) + $defaults;
+    // Change uri to theme directory.
+    $theme->uri = dirname($theme->uri);
+
+    $theme->info = drupal_parse_info_file($theme->uri . '/' . $theme->name . '.info') + $defaults;
 
     // Invoke hook_system_info_alter() to give installed modules a chance to
     // modify the data in the .info files if necessary.
     $type = 'theme';
-    drupal_alter('system_info', $themes[$key]->info, $themes[$key], $type);
+    drupal_alter('system_info', $theme->info, $theme, $type);
 
-    if (!empty($themes[$key]->info['base theme'])) {
-      $sub_themes[] = $key;
+    if (!empty($theme->info['base theme'])) {
+      $sub_themes[] = $theme->name;
     }
-    if ($themes[$key]->info['engine'] == 'theme') {
-      $filename = dirname($themes[$key]->uri) . '/' . $themes[$key]->name . '.theme';
+    if ($theme->info['engine'] == 'theme') {
+      $filename = dirname($theme->uri) . '/' . $theme->name . '.theme';
       if (file_exists($filename)) {
-        $themes[$key]->owner = $filename;
-        $themes[$key]->prefix = $key;
+        $theme->owner = $filename;
+        $theme->prefix = $theme->name;
       }
     }
     else {
-      $engine = $themes[$key]->info['engine'];
+      $engine = $theme->info['engine'];
       if (isset($engines[$engine])) {
-        $themes[$key]->owner = $engines[$engine]->uri;
-        $themes[$key]->prefix = $engines[$engine]->name;
-        $themes[$key]->template = TRUE;
+        $theme->owner = $engines[$engine]->uri;
+        $theme->prefix = $engines[$engine]->name;
+        $theme->template = TRUE;
       }
     }
 
     // Prefix stylesheets and scripts with module path.
-    $path = dirname($theme->uri);
+    $path = $theme->uri;
     $theme->info['stylesheets'] = _system_info_add_path($theme->info['stylesheets'], $path);
     $theme->info['scripts'] = _system_info_add_path($theme->info['scripts'], $path);
 
     // Give the screenshot proper path information.
-    if (!empty($themes[$key]->info['screenshot'])) {
-      $themes[$key]->info['screenshot'] = $path . '/' . $themes[$key]->info['screenshot'];
+    if (!empty($theme->info['screenshot'])) {
+      $theme->info['screenshot'] = $path . '/' . $theme->info['screenshot'];
     }
   }
 

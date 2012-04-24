@@ -142,7 +142,7 @@ function _drupal_theme_initialize($theme, $base_theme = array(), $registry_callb
   $theme_info = $theme;
   $base_theme_info = $base_theme;
 
-  $theme_path = dirname($theme->filename);
+  $theme_path = $theme->uri;
 
   // Prepare stylesheets from this theme as well as all ancestor themes.
   // We work it this way so that we can have child themes override parent
@@ -689,11 +689,11 @@ function _theme_build_registry($theme, $base_theme, $theme_engine) {
 
   // And then the same thing, but for the theme.
   if ($theme_engine) {
-    _theme_process_registry($cache, $theme_engine, 'theme_engine', $theme->name, dirname($theme->filename));
+    _theme_process_registry($cache, $theme_engine, 'theme_engine', $theme->name, $theme->uri);
   }
 
   // Finally, hooks provided by the theme itself.
-  _theme_process_registry($cache, $theme->name, 'theme', $theme->name, dirname($theme->filename));
+  _theme_process_registry($cache, $theme->name, 'theme', $theme->name, $theme->uri);
 
   // Let modules alter the registry.
   drupal_alter('theme_registry', $cache);
@@ -722,7 +722,7 @@ function _theme_build_registry($theme, $base_theme, $theme_engine) {
  *   An associative array of the currently available themes. The keys are the
  *   names of the themes and the values are objects having the following
  *   properties:
- *   - 'filename': The name of the .info file.
+ *   - 'uri': The directory of the theme.
  *   - 'name': The machine name of the theme.
  *   - 'status': 1 for enabled, 0 for disabled themes.
  *   - 'info': The contents of the .info file.
@@ -1239,7 +1239,7 @@ function drupal_find_theme_templates($cache, $extension, $path) {
   $theme_paths = array();
   foreach (list_themes() as $theme_info) {
     if (!empty($theme_info->base_theme)) {
-      $theme_paths[$theme_info->base_theme][$theme_info->name] = dirname($theme_info->filename);
+      $theme_paths[$theme_info->base_theme][$theme_info->name] = $theme_info->uri;
     }
   }
   foreach ($theme_paths as $basetheme => $subthemes) {
@@ -1414,7 +1414,7 @@ function theme_get_setting($setting_name, $theme = NULL) {
       // Generate the path to the logo image.
       if ($cache[$theme]['toggle_logo']) {
         if ($cache[$theme]['default_logo']) {
-          $cache[$theme]['logo'] = file_create_url(dirname($theme_object->filename) . '/logo.png');
+          $cache[$theme]['logo'] = file_create_url($theme_object->uri . '/logo.png');
         }
         elseif ($cache[$theme]['logo_path']) {
           $cache[$theme]['logo'] = file_create_url($cache[$theme]['logo_path']);
@@ -1424,7 +1424,7 @@ function theme_get_setting($setting_name, $theme = NULL) {
       // Generate the path to the favicon.
       if ($cache[$theme]['toggle_favicon']) {
         if ($cache[$theme]['default_favicon']) {
-          if (file_exists($favicon = dirname($theme_object->filename) . '/favicon.ico')) {
+          if (file_exists($favicon = $theme_object->uri . '/favicon.ico')) {
             $cache[$theme]['favicon'] = file_create_url($favicon);
           }
           else {

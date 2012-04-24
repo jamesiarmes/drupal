@@ -73,7 +73,7 @@ function php_eval($code) {
     $theme_path = drupal_get_path('theme', $conf['theme_default']);
   }
   else {
-    $theme_path = dirname($theme_info->filename);
+    $theme_path = $theme_info->uri;
   }
 
   ob_start();

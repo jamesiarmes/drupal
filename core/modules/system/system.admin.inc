@@ -554,7 +554,7 @@ function system_theme_settings($form, &$form_state, $key = '') {
     // Process the theme and all its base themes.
     foreach ($theme_keys as $theme) {
       // Include the theme-settings.php file.
-      $filename = DRUPAL_ROOT . '/' . str_replace("/$theme.info", '', $themes[$theme]->filename) . '/theme-settings.php';
+      $filename = DRUPAL_ROOT . '/' . $themes[$theme]->uri . '/theme-settings.php';
       if (file_exists($filename)) {
         require_once $filename;
       }

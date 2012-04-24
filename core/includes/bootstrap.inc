@@ -743,9 +743,9 @@ function drupal_get_filename($type, $name, $filename = NULL) {
   else {
     try {
       if (function_exists('db_query')) {
-        $file = db_query("SELECT filename FROM {system} WHERE name = :name AND type = :type", array(':name' => $name, ':type' => $type))->fetchField();
+        $file = db_query("SELECT uri FROM {system} WHERE name = :name AND type = :type", array(':name' => $name, ':type' => $type))->fetchField();
         if (file_exists(DRUPAL_ROOT . '/' . $file)) {
-          $files[$type][$name] = $file;
+          $files[$type][$name] = $file . '/' . $name . '.' . $type;
         }
       }
     }
@@ -999,15 +999,20 @@ function drupal_load($type, $name) {
   }
 
   $filename = drupal_get_filename($type, $name);
-
-  if ($filename) {
-    include_once DRUPAL_ROOT . '/' . $filename;
-    $files[$type][$name] = TRUE;
-
-    return TRUE;
+  
+  if (!$filename) {
+    return FALSE;
   }
+  
+  $filename = DRUPAL_ROOT . '/' . $filename;
+  
+  if (is_file($filename)) {
+    include_once $filename;
+  }
+  
+  $files[$type][$name] = TRUE;
 
-  return FALSE;
+  return TRUE;
 }
 
 /**

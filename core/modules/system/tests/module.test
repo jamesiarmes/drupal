@@ -59,8 +59,8 @@ class ModuleUnitTest extends DrupalWebTestCase {
 
     // Test the fixed list feature.
     $fixed_list = array(
-      'system' => array('filename' => drupal_get_path('module', 'system')),
-      'menu' => array('filename' => drupal_get_path('module', 'menu')),
+      'system' => array('uri' => dirname(drupal_get_path('module', 'system'))),
+      'menu' => array('uri' => dirname(drupal_get_path('module', 'menu'))),
     );
     module_list(FALSE, FALSE, FALSE, $fixed_list);
     $new_module_list = array_combine(array_keys($fixed_list), array_keys($fixed_list));

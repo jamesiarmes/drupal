@@ -35,7 +35,7 @@ function _registry_update() {
   $files = array();
   foreach ($modules as &$module) {
     $module->info = unserialize($module->info);
-    $dir = dirname($module->filename);
+    $dir = $module->uri;
 
     // Store the module directory for use in hook_registry_files_alter().
     $module->dir = $dir;

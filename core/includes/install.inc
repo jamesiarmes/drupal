@@ -161,7 +161,7 @@ function drupal_get_database_types() {
   require_once DRUPAL_ROOT . '/core/includes/database.inc';
   foreach (file_scan_directory(DRUPAL_ROOT . '/core/lib/Drupal/Core/Database/Driver', '/^[a-z]*$/i', array('recurse' => FALSE)) as $file) {
     if (file_exists($file->uri . '/Install/Tasks.php')) {
-      $drivers[$file->filename] = $file->uri;
+      $drivers[basename($file->uri)] = $file->uri;
     }
   }
 
@@ -283,7 +283,7 @@ function drupal_verify_profile($install_state) {
 
   // Get a list of modules that exist in Drupal's assorted subdirectories.
   $present_modules = array();
-  foreach (drupal_system_listing('/^' . DRUPAL_PHP_FUNCTION_PATTERN . '\.module$/', 'modules', 'name', 0) as $present_module) {
+  foreach (drupal_system_listing('/^' . DRUPAL_PHP_FUNCTION_PATTERN . '\.info$/', 'modules', 'name', 0) as $present_module) {
     $present_modules[] = $present_module->name;
   }
 
@@ -325,9 +325,9 @@ function drupal_install_system() {
   $system_versions = drupal_get_schema_versions('system');
   $system_version = $system_versions ? max($system_versions) : SCHEMA_INSTALLED;
   db_insert('system')
-    ->fields(array('filename', 'name', 'type', 'owner', 'status', 'schema_version', 'bootstrap'))
+    ->fields(array('uri', 'name', 'type', 'owner', 'status', 'schema_version', 'bootstrap'))
     ->values(array(
-        'filename' => $system_path . '/system.module',
+        'uri' => $system_path,
         'name' => 'system',
         'type' => 'module',
         'owner' => '',

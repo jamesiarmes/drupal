@@ -73,7 +73,7 @@ function module_list($refresh = FALSE, $bootstrap_refresh = FALSE, $sort = FALSE
     $sorted_list = NULL;
     if ($fixed_list) {
       foreach ($fixed_list as $name => $module) {
-        drupal_get_filename('module', $name, $module['filename']);
+        drupal_get_filename('module', $name, $module['uri'] . '/' . $name . '.' . $module);
         $list[$name] = $name;
       }
     }
@@ -135,15 +135,16 @@ function system_list($type) {
       $bootstrap_list = $cached->data;
     }
     else {
-      $bootstrap_list = db_query("SELECT name, filename FROM {system} WHERE status = 1 AND bootstrap = 1 AND type = 'module' ORDER BY weight ASC, name ASC")->fetchAllAssoc('name');
+      $bootstrap_list = db_query("SELECT name, uri FROM {system} WHERE status = 1 AND bootstrap = 1 AND type = 'module' ORDER BY weight ASC, name ASC")->fetchAllAssoc('name');
       cache('bootstrap')->set('bootstrap_modules', $bootstrap_list);
     }
     // To avoid a separate database lookup for the filepath, prime the
     // drupal_get_filename() static cache for bootstrap modules only.
     // The rest is stored separately to keep the bootstrap module cache small.
     foreach ($bootstrap_list as $module) {
-      drupal_classloader_register($module->name, dirname($module->filename));
-      drupal_get_filename('module', $module->name, $module->filename);
+      drupal_classloader_register($module->name, $module->uri);
+      $filename = $module->uri . '/' . $module->name . '.module';
+      drupal_get_filename('module', $module->name, $filename);
     }
     // We only return the module names here since module_list() doesn't need
     // the filename itself.
@@ -178,7 +179,8 @@ function system_list($type) {
         }
         // Build a list of filenames so drupal_get_filename can use it.
         if ($record->status) {
-          $lists['filepaths'][] = array('type' => $record->type, 'name' => $record->name, 'filepath' => $record->filename);
+          $filepath = $record->uri . '/' . $record->name . '.' . $record->type;
+          $lists['filepaths'][] = array('type' => $record->type, 'name' => $record->name, 'filepath' => $filepath);
         }
       }
       foreach ($lists['theme'] as $key => $theme) {

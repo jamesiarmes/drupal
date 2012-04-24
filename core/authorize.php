@@ -78,8 +78,8 @@ global $conf;
 
 // We have to enable the user and system modules, even to check access and
 // display errors via the maintenance theme.
-$module_list['system']['filename'] = 'core/modules/system/system.module';
-$module_list['user']['filename'] = 'core/modules/user/user.module';
+$module_list['system']['uri'] = 'core/modules/system';
+$module_list['user']['uri'] = 'core/modules/user';
 module_list(TRUE, FALSE, FALSE, $module_list);
 drupal_load('module', 'system');
 drupal_load('module', 'user');

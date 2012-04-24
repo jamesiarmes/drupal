@@ -401,7 +401,7 @@ if (empty($op) && update_access_allowed()) {
 
   // Load module basics.
   include_once DRUPAL_ROOT . '/core/includes/module.inc';
-  $module_list['system']['filename'] = 'core/modules/system/system.module';
+  $module_list['system']['uri'] = 'core/modules/system';
   module_list(TRUE, FALSE, FALSE, $module_list);
   drupal_load('module', 'system');
 
