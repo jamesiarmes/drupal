@@ -279,9 +279,9 @@ function install_begin_request(&$install_state) {
   drupal_language_initialize();
 
   require_once DRUPAL_ROOT . '/core/includes/ajax.inc';
-  $module_list['system']['filename'] = 'core/modules/system/system.module';
-  $module_list['entity']['filename'] = 'core/modules/entity/entity.module';
-  $module_list['user']['filename']   = 'core/modules/user/user.module';
+  $module_list['system']['uri'] = 'core/modules/system';
+  $module_list['entity']['uri'] = 'core/modules/entity';
+  $module_list['user']['uri']   = 'core/modules/user';
   module_list(TRUE, FALSE, FALSE, $module_list);
   drupal_load('module', 'system');
   drupal_load('module', 'entity');
