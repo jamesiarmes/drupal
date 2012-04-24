@@ -73,7 +73,7 @@ function module_list($refresh = FALSE, $bootstrap_refresh = FALSE, $sort = FALSE
     $sorted_list = NULL;
     if ($fixed_list) {
       foreach ($fixed_list as $name => $module) {
-        drupal_get_filename('module', $name, $module['uri'] . '/' . $name . '.' . $module);
+        drupal_get_filename('module', $name, $module['uri'] . '/' . $name . '.module');
         $list[$name] = $name;
       }
     }
