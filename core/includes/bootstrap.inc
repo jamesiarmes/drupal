@@ -999,17 +999,17 @@ function drupal_load($type, $name) {
   }
 
   $filename = drupal_get_filename($type, $name);
-  
+
   if (!$filename) {
     return FALSE;
   }
-  
+
   $filename = DRUPAL_ROOT . '/' . $filename;
-  
+
   if (is_file($filename)) {
     include_once $filename;
   }
-  
+
   $files[$type][$name] = TRUE;
 
   return TRUE;
